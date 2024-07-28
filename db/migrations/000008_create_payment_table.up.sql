@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS payment (
+  id SERIAL NOT NULL PRIMARY KEY,
+  payment_method VARCHAR(255) NOT NULL,
+  completed_at TIMESTAMP NULL,
+  status VARCHAR(255) NOT NULL,
+  final_price DECIMAL(12) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+)
