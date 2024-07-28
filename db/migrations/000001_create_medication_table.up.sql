@@ -8,5 +8,7 @@ CREATE TABLE IF NOT EXISTS medication (
   amount INT NULL,
   status VARCHAR(255) NOT NULL,
   manufacturer VARCHAR(255) NOT NULL,
+  extension JSONB NULL,
+  batch JSONB NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 )

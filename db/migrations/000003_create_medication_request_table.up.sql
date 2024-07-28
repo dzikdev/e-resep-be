@@ -18,5 +18,6 @@ CREATE TABLE IF NOT EXISTS medication_request (
   dosage_instructions JSONB NOT NULL,
   dispense_request JSONB NOT NULL,
   substitution JSONB NULL,
+  raw_request JSONB NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 )
