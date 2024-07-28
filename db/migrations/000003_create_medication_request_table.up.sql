@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS medication_request (
+  id SERIAL NOT NULL PRIMARY KEY,
+  medication_id INT NOT NULL,
+  ref_id TEXT NOT NULL,
+  status VARCHAR(255) NOT NULL,
+  patient_id INT NOT NULL,
+  reason VARCHAR(255) NOT NULL,
+  intent VARCHAR(255) NOT NULL,
+  category VARCHAR(255) NOT NULL,
+  reported BOOLEAN NOT NULL,
+  encounter VARCHAR(255) NOT NULL,
+  requester VARCHAR(255) NOT NULL,
+  performer VARCHAR(255) NOT NULL,
+  recorder VARCHAR(255) NOT NULL,
+  note JSONB NULL,
+  insurance JSONB NULL,
+  course_of_therapy_type VARCHAR(255) NOT NULL,
+  dosage_instructions JSONB NOT NULL,
+  dispense_request JSONB NOT NULL,
+  substitution JSONB NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+)
