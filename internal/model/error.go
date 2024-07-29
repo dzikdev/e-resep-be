@@ -7,10 +7,10 @@ import (
 type ErrorKind string
 
 const (
-	Validation ErrorKind = "Validation Error"
-	Type       ErrorKind = "Type Error"
-	NotFound   ErrorKind = "Not Found"
-	Unknown    ErrorKind = "Unknown Error"
+	Validation  ErrorKind = "Validation Error"
+	TypeInvalid ErrorKind = "Type Error"
+	NotFound    ErrorKind = "Not Found"
+	Unknown     ErrorKind = "Unknown Error"
 )
 
 // NewError return wrapped dynamic errors

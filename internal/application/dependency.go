@@ -7,7 +7,8 @@ import (
 )
 
 type Dependency struct {
-	HealthCheckController controllerV1.HealthCheckController
+	HealthCheckController  controllerV1.HealthCheckController
+	PrescriptionController controllerV1.PrescriptionController
 }
 
 func SetupDependencyInjection(app *App) *Dependency {
@@ -19,8 +20,10 @@ func SetupDependencyInjection(app *App) *Dependency {
 
 	// controller
 	healthCheckControllerImpl := controllerV1.NewHealthCheckController(app.Context, app.Config, healthCheckSvcImpl)
+	prescriptionControllerImpl := controllerV1.NewPrescriptionController(app.Context, app.Config)
 
 	return &Dependency{
-		HealthCheckController: healthCheckControllerImpl,
+		HealthCheckController:  healthCheckControllerImpl,
+		PrescriptionController: prescriptionControllerImpl,
 	}
 }

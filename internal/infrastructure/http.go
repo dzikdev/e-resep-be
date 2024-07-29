@@ -21,5 +21,7 @@ func setupRouter(app *application.App) {
 	v1 := app.Application.Group("/api/v1")
 	{
 		v1.GET("/health-check", dep.HealthCheckController.Check)
+
+		v1.POST("/prescription", dep.PrescriptionController.Create)
 	}
 }
