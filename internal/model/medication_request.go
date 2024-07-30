@@ -126,10 +126,10 @@ type MedicationRequest struct {
 	AuthoredOn          string              `json:"authoredOn"`
 	Category            []Category          `json:"category"`
 	CourseOfTherapyType CourseOfTherapyType `json:"courseOfTherapyType"`
-	DispenseRequest     *DispenseRequest    `json:"dispenseRequest"`
+	DispenseRequest     DispenseRequest     `json:"dispenseRequest"`
 	DosageInstruction   []DosageInstruction `json:"dosageInstruction"`
 	Encounter           Encounter           `json:"encounter"`
-	ID                  *string             `json:"id"`
+	ID                  string              `json:"id"`
 	Identifier          []Identifier        `json:"identifier"`
 	Intent              string              `json:"intent"`
 	MedicationReference MedicationReference `json:"medicationReference"`
