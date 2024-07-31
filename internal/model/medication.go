@@ -18,6 +18,8 @@ type Medication struct {
 	ID           string       `json:"id"`
 	Identifier   []Identifier `json:"identifier"`
 	Ingredient   []Ingredient `json:"ingredient"`
+	Amount       interface{}  `json:"amount"`
+	Batch        interface{}  `json:"batch"`
 	Manufacturer struct {
 		Reference string `json:"reference"`
 	} `json:"manufacturer"`

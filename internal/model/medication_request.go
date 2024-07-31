@@ -112,12 +112,7 @@ type ReasonCode struct {
 	Coding []Coding `json:"coding"`
 }
 
-type Requester struct {
-	Display   string `json:"display"`
-	Reference string `json:"reference"`
-}
-
-type Subject struct {
+type User struct {
 	Display   string `json:"display"`
 	Reference string `json:"reference"`
 }
@@ -136,8 +131,13 @@ type MedicationRequest struct {
 	Meta                Meta                `json:"meta"`
 	Priority            string              `json:"priority"`
 	ReasonCode          []ReasonCode        `json:"reasonCode"`
-	Requester           Requester           `json:"requester"`
+	Requester           User                `json:"requester"`
+	Performer           User                `json:"performer"`
+	Recorder            User                `json:"recorder"`
 	ResourceType        string              `json:"resourceType"`
 	Status              string              `json:"status"`
-	Subject             Subject             `json:"subject"`
+	Subject             User                `json:"subject"`
+	Note                interface{}         `json:"note"`
+	Insurance           interface{}         `json:"insurance"`
+	Substitution        interface{}         `json:"substitution"`
 }
