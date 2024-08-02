@@ -69,30 +69,12 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 
 	amountJsonData, err := json.Marshal(req.Medication.Amount)
 	if err != nil {
-		errRollback := tx.Rollback(ctx)
-		if errRollback != nil {
-			pr.Logger.Error("PrescriptionRepositoryImpl.Insert ERROR rollback TX", errRollback)
-
-			return errRollback
-		}
-		pr.Logger.Error("PrescriptionRepositoryImpl.Insert json marshal ERROR", err)
-
-		return err
+		amountJsonData = []byte("{}")
 	}
 
 	batchJsonData, err := json.Marshal(req.Medication.Batch)
 	if err != nil {
-
-		errRollback := tx.Rollback(ctx)
-		if errRollback != nil {
-			pr.Logger.Error("PrescriptionRepositoryImpl.Insert ERROR rollback TX", errRollback)
-
-			return errRollback
-		}
-
-		pr.Logger.Error("PrescriptionRepositoryImpl.Insert json marshal ERROR", err)
-
-		return err
+		batchJsonData = []byte("{}")
 	}
 
 	extJsonData, err := json.Marshal(req.Medication.Extension)
@@ -185,28 +167,12 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 
 	noteJsonData, err := json.Marshal(req.MedicationRequest.Note)
 	if err != nil {
-		errRollback := tx.Rollback(ctx)
-		if errRollback != nil {
-			pr.Logger.Error("PrescriptionRepositoryImpl.Insert ERROR rollback TX", errRollback)
-
-			return errRollback
-		}
-		pr.Logger.Error("PrescriptionRepositoryImpl.Insert json marshal ERROR", err)
-
-		return err
+		noteJsonData = []byte("{}")
 	}
 
 	insuranceJsonData, err := json.Marshal(req.MedicationRequest.Insurance)
 	if err != nil {
-		errRollback := tx.Rollback(ctx)
-		if errRollback != nil {
-			pr.Logger.Error("PrescriptionRepositoryImpl.Insert ERROR rollback TX", errRollback)
-
-			return errRollback
-		}
-		pr.Logger.Error("PrescriptionRepositoryImpl.Insert json marshal ERROR", err)
-
-		return err
+		insuranceJsonData = []byte("{}")
 	}
 
 	dosageInstructionJsonData, err := json.Marshal(req.MedicationRequest.DosageInstruction)
@@ -237,15 +203,7 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 
 	substitutionJsonData, err := json.Marshal(req.MedicationRequest.Substitution)
 	if err != nil {
-		errRollback := tx.Rollback(ctx)
-		if errRollback != nil {
-			pr.Logger.Error("PrescriptionRepositoryImpl.Insert ERROR rollback TX", errRollback)
-
-			return errRollback
-		}
-		pr.Logger.Error("PrescriptionRepositoryImpl.Insert json marshal ERROR", err)
-
-		return err
+		substitutionJsonData = []byte("{}")
 	}
 
 	rawRequestJsonData, err := json.Marshal(req.MedicationRequest)
