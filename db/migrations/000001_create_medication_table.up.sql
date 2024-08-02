@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS medication (
   code VARCHAR(255) NULL,
   form_code VARCHAR(255) NOT NULL,
   form_value VARCHAR(255) NOT NULL,
-  amount INT NULL,
+  amount JSONB NULL,
   status VARCHAR(255) NOT NULL,
   manufacturer VARCHAR(255) NOT NULL,
   extension JSONB NULL,
