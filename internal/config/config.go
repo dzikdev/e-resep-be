@@ -6,6 +6,7 @@ type (
 	Configuration struct {
 		Server   *Server
 		Database *Database
+		Whatsapp *Whatsapp
 	}
 
 	Server struct {
@@ -22,6 +23,11 @@ type (
 		Password string
 		Name     string
 		SslMode  string
+	}
+
+	Whatsapp struct {
+		WaAuthURL      string
+		WaBroadcastURL string
 	}
 )
 
@@ -40,6 +46,10 @@ func loadConfiguration() *Configuration {
 			Password: helper.GetEnvString("DB_PASSWORD"),
 			Name:     helper.GetEnvString("DB_NAME"),
 			SslMode:  helper.GetEnvString("DB_SSL_MODE"),
+		},
+		Whatsapp: &Whatsapp{
+			WaAuthURL:      helper.GetEnvString("WA_AUTH_URL"),
+			WaBroadcastURL: helper.GetEnvString("WA_BROADCAST_URL"),
 		},
 	}
 }
