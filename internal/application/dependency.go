@@ -12,6 +12,8 @@ type Dependency struct {
 }
 
 func SetupDependencyInjection(app *App) *Dependency {
+	// requester
+
 	// repository
 	healthCheckRepoImpl := repository.NewHealthCheckRepository(app.Context, app.Config, app.Logger, app.DB)
 	prescriptionRepoImpl := repository.NewPrescriptionRepository(app.Context, app.Config, app.Logger, app.DB)
