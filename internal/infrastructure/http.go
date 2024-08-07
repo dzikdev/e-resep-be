@@ -23,5 +23,7 @@ func setupRouter(app *application.App) {
 		v1.GET("/health-check", dep.HealthCheckController.Check)
 
 		v1.POST("/prescription", dep.PrescriptionController.Create)
+
+		//TODO: add new route for get prescription by patient id
 	}
 }
