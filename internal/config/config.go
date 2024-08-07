@@ -4,9 +4,11 @@ import "e-resep-be/internal/helper"
 
 type (
 	Configuration struct {
-		Server   *Server
-		Database *Database
-		Whatsapp *Whatsapp
+		Server     *Server
+		Database   *Database
+		Const      *Const
+		Whatsapp   *Whatsapp
+		KimiaFarma *KimiaFarma
 	}
 
 	Server struct {
@@ -25,9 +27,16 @@ type (
 		SslMode  string
 	}
 
+	Const struct {
+		ClientURL string
+	}
+
 	Whatsapp struct {
-		WaAuthURL      string
 		WaBroadcastURL string
+	}
+
+	KimiaFarma struct {
+		KimiaFarmaURL string
 	}
 )
 
@@ -47,9 +56,14 @@ func loadConfiguration() *Configuration {
 			Name:     helper.GetEnvString("DB_NAME"),
 			SslMode:  helper.GetEnvString("DB_SSL_MODE"),
 		},
+		Const: &Const{
+			ClientURL: helper.GetEnvString("CLIENT_URL"),
+		},
 		Whatsapp: &Whatsapp{
-			WaAuthURL:      helper.GetEnvString("WA_AUTH_URL"),
 			WaBroadcastURL: helper.GetEnvString("WA_BROADCAST_URL"),
+		},
+		KimiaFarma: &KimiaFarma{
+			KimiaFarmaURL: helper.GetEnvString("KIMIA_FARMA_URL"),
 		},
 	}
 }
