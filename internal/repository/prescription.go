@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
 )
@@ -15,7 +16,8 @@ import (
 type (
 	// PrescriptionRepository is an interface that has all the function to be implemented inside health check repository
 	PrescriptionRepository interface {
-		Insert(ctx context.Context, req *model.PrescriptionRequest) error
+		Insert(ctx context.Context, req *model.PrescriptionRequest, phoneNumber string) error
+		GetByPatientID(ctx context.Context, patientID string) ([]model.Prescription, error)
 	}
 
 	// PrescriptionRepositoryImpl is an app health check struct that consists of all the dependencies needed for perscription repository
@@ -37,17 +39,20 @@ func NewPrescriptionRepository(ctx context.Context, config *config.Configuration
 	}
 }
 
-func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.PrescriptionRequest) error {
+func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.PrescriptionRequest, phoneNumber string) error {
 	qInsertMedication := `
-		INSERT INTO medication (ref_id,identifier,code,form_code,form_value,amount,status,manufacturer,extension,batch) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id
+		INSERT INTO medication (ref_id,identifier,code,code_display,form_code,form_value,amount,status,manufacturer,extension,batch) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id
 	`
 	qInsertMedicationIngredients := `
 		INSERT INTO medication_ingredient (
 			medication_id,code,display,is_active,strength_denominator,strength_numerator
 		) VALUES %s
 	`
+	qCheckPatient := `
+		SELECT ref_id FROM patient WHERE ref_id = $1
+	`
 	qInsertPatient := `
-		INSERT INTO patient (ref_id, name) VALUES ($1, $2) RETURNING id 
+		INSERT INTO patient (ref_id, name, phone_number) VALUES ($1, $2, $3) RETURNING id;
 	`
 	qInsertMedicationRequest := `
 		INSERT INTO medication_request (medication_id,ref_id,status,patient_id,reason,intent,category,reported,encounter,requester,performer,recorder,note,insurance,course_of_therapy_type,dosage_instructions,dispense_request,substitution,raw_request) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id
@@ -96,6 +101,7 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 		req.Medication.ID,
 		req.Medication.Identifier[0].Value,
 		req.Medication.Code.Coding[0].Code,
+		req.Medication.Code.Coding[0].Display,
 		req.Medication.Form.Coding[0].Code,
 		req.Medication.Form.Coding[0].Display,
 		string(amountJsonData),
@@ -146,11 +152,19 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 
 	// INSERT PATIENT
 
-	var patientID int
-	row = tx.QueryRow(ctx, qInsertPatient, req.MedicationRequest.Subject.Reference, req.MedicationRequest.Subject.Display)
+	var (
+		patientID    int
+		patientRefID string
+		isCreateable bool = false
+	)
 
-	err = row.Scan(&patientID)
+	row = tx.QueryRow(ctx, qCheckPatient, req.MedicationRequest.Subject.Reference)
+	err = row.Scan(&patientRefID)
 	if err != nil {
+		if err.Error() == pgx.ErrNoRows.Error() {
+			isCreateable = true
+		}
+
 		errRollback := tx.Rollback(ctx)
 		if errRollback != nil {
 			pr.Logger.Error("PrescriptionRepositoryImpl.Insert ERROR rollback TX", errRollback)
@@ -158,9 +172,27 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 			return errRollback
 		}
 
-		pr.Logger.Error("PrescriptionRepositoryImpl.Insert ERROR Scan Insert Patient", err)
+		pr.Logger.Error("PrescriptionRepositoryImpl.Insert ERROR Scan Check Patient", err)
 
 		return err
+	}
+
+	if isCreateable {
+		row = tx.QueryRow(ctx, qInsertPatient, req.MedicationRequest.Subject.Reference, req.MedicationRequest.Subject.Display, phoneNumber)
+
+		err = row.Scan(&patientID)
+		if err != nil {
+			errRollback := tx.Rollback(ctx)
+			if errRollback != nil {
+				pr.Logger.Error("PrescriptionRepositoryImpl.Insert ERROR rollback TX", errRollback)
+
+				return errRollback
+			}
+
+			pr.Logger.Error("PrescriptionRepositoryImpl.Insert ERROR Scan Insert Patient", err)
+
+			return err
+		}
 	}
 
 	// INSERT MEDICATION REQUEST
@@ -295,4 +327,9 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 	}
 
 	return nil
+}
+
+func (pr *PrescriptionRepositoryImpl) GetByPatientID(ctx context.Context, patientID string) ([]model.Prescription, error) {
+	// TODO : implement Get Prescription By Patient ID
+	return []model.Prescription{}, nil
 }
