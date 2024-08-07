@@ -36,12 +36,13 @@ func NewPrescriptionController(ctx context.Context, config *config.Configuration
 
 func (pc *PrescriptionControllerImpl) Create(ctx echo.Context) error {
 	var prescriptionReq model.PrescriptionRequest
+	phoneNumber := ctx.QueryParam("phoneNumber") // TODO: temporary query param
 
 	if err := ctx.Bind(&prescriptionReq); err != nil {
 		return helper.NewResponses[any](ctx, http.StatusBadRequest, err.Error(), err.Error(), err, nil)
 	}
 
-	err := pc.PrescriptionSvc.Create(ctx.Request().Context(), &prescriptionReq)
+	err := pc.PrescriptionSvc.Create(ctx.Request().Context(), &prescriptionReq, phoneNumber)
 	if err != nil {
 		return helper.NewResponses[any](ctx, http.StatusInternalServerError, "Error Create Prescription", nil, err, nil)
 	}
