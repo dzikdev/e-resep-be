@@ -8,5 +8,8 @@ CREATE TABLE IF NOT EXISTS transaction_address (
   province VARCHAR(255) NOT NULL,
   postal_code VARCHAR(5) NOT NULL,
   coordinates POINT NOT NULL,
+  recipent_name VARCHAR(255) NOT NULL,
+  recipent_phone_number VARCHAR(20) NOT NULL,
+  additional_notes TEXT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 )
