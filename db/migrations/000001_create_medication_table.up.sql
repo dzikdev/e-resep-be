@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS medication (
   ref_id TEXT NOT NULL,
   identifier VARCHAR(255) NULL,
   code VARCHAR(255) NULL,
+  code_display TEXT NULL,
   form_code VARCHAR(255) NOT NULL,
   form_value VARCHAR(255) NOT NULL,
   amount JSONB NULL,

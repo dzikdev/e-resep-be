@@ -15,7 +15,7 @@ import (
 type (
 	// WhatsappRequester is an interface that has all the function to be implemented inside whatsapp requester
 	WhatsappRequester interface {
-		SendMessageByRecipentNumber(ctx context.Context, destination string, templateName string, parameters []model.Parameter, accessToken string) error
+		SendMessageByRecipentNumber(ctx context.Context, patientName, patientID, destination string, templateName model.TemplateName) error
 	}
 
 	// WhatsappRequesterImpl is an app whatsapp struct that consists of all the dependencies needed for whatsapp requester
@@ -37,35 +37,28 @@ func NewWhatsappRequester(ctx context.Context, config *config.Configuration, log
 	}
 }
 
-func (wr *WhatsappRequesterImpl) SendMessageByRecipentNumber(ctx context.Context, destination string, templateName string, parameters []model.Parameter, accessToken string) error {
-	msg := model.Message{
-		MessagingProduct: "whatsapp",
-		To:               destination,
-		Type:             "template",
-		Template: model.Template{
-			Name:     templateName,
-			Language: model.Language{Code: "id_ID"},
-			Components: []model.Component{
-				{
-					Type:       "body",
-					Parameters: parameters,
-				},
-			},
-		},
+func (wr *WhatsappRequesterImpl) SendMessageByRecipentNumber(ctx context.Context, patientName, patientID, destination string, templateName model.TemplateName) error {
+
+	msgWithTemplate := wr.generateTemplateWhatsappByName(templateName)
+	linkFEURL := fmt.Sprintf("%s/resep/%s", wr.Config.Const.ClientURL, patientID)
+
+	sendMessageReq := model.SendMessageRequest{
+		To:          destination,
+		TypeMessage: "text",
+		Message:     fmt.Sprintf(msgWithTemplate, patientName, linkFEURL),
 	}
 
-	msgBytes, err := json.Marshal(msg)
+	sendMesssageReqBytes, err := json.Marshal(sendMessageReq)
 	if err != nil {
 		return fmt.Errorf("error marshaling message: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", wr.Config.Whatsapp.WaBroadcastURL, bytes.NewBuffer(msgBytes))
+	req, err := http.NewRequest("POST", wr.Config.Whatsapp.WaBroadcastURL, bytes.NewBuffer(sendMesssageReqBytes))
 	if err != nil {
 		return fmt.Errorf("error creating request: %v", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -79,4 +72,22 @@ func (wr *WhatsappRequesterImpl) SendMessageByRecipentNumber(ctx context.Context
 	}
 
 	return nil
+}
+
+func (wr *WhatsappRequesterImpl) generateTemplateWhatsappByName(name model.TemplateName) string {
+	switch name {
+	case model.TemplateSendPrescription:
+		return `Halo *%s*,
+
+Resep Anda sudah siap untuk diperiksa. Silakan ikuti tautan di bawah ini untuk mengkonfirmasi ketersediaan dan detail resep Anda:
+
+Periksa Resep Anda di : %s
+
+Jika Anda memiliki pertanyaan, jangan ragu untuk menghubungi tim dukungan kami.
+
+Terima kasih,
+*E-RESEP*`
+	default:
+		return ""
+	}
 }

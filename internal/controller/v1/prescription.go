@@ -15,6 +15,7 @@ type (
 	// PrescriptionController is an interface that has all the function to be implemented inside prescription controller
 	PrescriptionController interface {
 		Create(ctx echo.Context) error
+		GetByID(ctx echo.Context) error
 	}
 
 	// PrescriptionControllerImpl is an app prescription struct that consists of all the dependencies needed for prescription controller
@@ -36,15 +37,27 @@ func NewPrescriptionController(ctx context.Context, config *config.Configuration
 
 func (pc *PrescriptionControllerImpl) Create(ctx echo.Context) error {
 	var prescriptionReq model.PrescriptionRequest
+	phoneNumber := ctx.QueryParam("phoneNumber") // TODO: temporary query param
 
 	if err := ctx.Bind(&prescriptionReq); err != nil {
 		return helper.NewResponses[any](ctx, http.StatusBadRequest, err.Error(), err.Error(), err, nil)
 	}
 
-	err := pc.PrescriptionSvc.Create(ctx.Request().Context(), &prescriptionReq)
+	err := pc.PrescriptionSvc.Create(ctx.Request().Context(), &prescriptionReq, phoneNumber)
 	if err != nil {
 		return helper.NewResponses[any](ctx, http.StatusInternalServerError, "Error Create Prescription", nil, err, nil)
 	}
 
 	return helper.NewResponses[any](ctx, http.StatusCreated, "Success Create Prescription", nil, nil, nil)
+}
+
+func (pc *PrescriptionControllerImpl) GetByID(ctx echo.Context) error {
+	id := ctx.Param("id")
+
+	results, err := pc.PrescriptionSvc.GetByID(ctx.Request().Context(), id)
+	if err != nil {
+		return helper.NewResponses[any](ctx, http.StatusInternalServerError, "Error Get Prescription", nil, err, nil)
+	}
+
+	return helper.NewResponses[any](ctx, http.StatusOK, "Success Get Prescription", results, nil, nil)
 }

@@ -2,6 +2,8 @@ CREATE TABLE IF NOT EXISTS medication_request (
   id SERIAL NOT NULL PRIMARY KEY,
   medication_id INT NOT NULL,
   ref_id TEXT NOT NULL,
+  prescription_id TEXT NOT NULL,
+  prescription_item_id TEXT NOT NULL,
   status VARCHAR(255) NOT NULL,
   patient_id INT NOT NULL,
   reason VARCHAR(255) NOT NULL,
