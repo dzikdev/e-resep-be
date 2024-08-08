@@ -7,7 +7,7 @@ type (
 	}
 
 	Prescription struct {
-		ID          string `db:"id" json:"id"`
+		ID          int    `db:"id" json:"id"`
 		Display     string `db:"display" json:"display"`
 		Code        string `db:"code" json:"code"`
 		Price       int    `json:"price"`

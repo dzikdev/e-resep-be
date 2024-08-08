@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 
 	"e-resep-be/internal/config"
 	"e-resep-be/internal/model"
@@ -13,6 +14,7 @@ type (
 	// PrescriptionService is an interface that has all the function to be implemented inside prescription service
 	PrescriptionService interface {
 		Create(ctx context.Context, req *model.PrescriptionRequest, phoneNumber string) error
+		GetByPatientID(ctx context.Context, patientID string) ([]model.Prescription, error)
 	}
 
 	// PrescriptionServiceImpl is an app prescription struct that consists of all the dependencies needed for prescription service
@@ -45,11 +47,33 @@ func (ps *PrescriptionServiceImpl) Create(ctx context.Context, req *model.Prescr
 
 	if phoneNumber != "" {
 		// send message to patient number through whatsapp
-		err = ps.WhatsappRequester.SendMessageByRecipentNumber(ctx, req.MedicationRequest.Subject.Display, req.MedicationRequest.Subject.Reference, phoneNumber, model.TemplateSendPrescription)
+		trimPatientRefId := strings.Replace(req.MedicationRequest.Subject.Reference, "Patient/", "", 1)
+		err = ps.WhatsappRequester.SendMessageByRecipentNumber(ctx, req.MedicationRequest.Subject.Display, trimPatientRefId, phoneNumber, model.TemplateSendPrescription)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (ps *PrescriptionServiceImpl) GetByPatientID(ctx context.Context, patientID string) ([]model.Prescription, error) {
+	prescriptions, err := ps.PrescriptionRepo.GetByPatientID(ctx, patientID)
+	if err != nil {
+		return []model.Prescription{}, err
+	}
+
+	if len(prescriptions) > 0 {
+		for i := range prescriptions {
+			kimiaFarmaResp, err := ps.KimiaFarmaRequester.CheckAvailabilityAndPriceMedicationByCode(ctx, prescriptions[i].Code)
+			if err != nil {
+				return []model.Prescription{}, err
+			}
+
+			prescriptions[i].IsAvailable = kimiaFarmaResp.IsAvailable
+			prescriptions[i].Price = kimiaFarmaResp.Price
+		}
+	}
+
+	return prescriptions, nil
 }

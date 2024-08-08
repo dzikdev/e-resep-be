@@ -7,6 +7,7 @@ import (
 	"e-resep-be/internal/model"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -49,7 +50,7 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 		) VALUES %s
 	`
 	qCheckPatient := `
-		SELECT ref_id FROM patient WHERE ref_id = $1
+		SELECT id FROM patient WHERE ref_id = $1
 	`
 	qInsertPatient := `
 		INSERT INTO patient (ref_id, name, phone_number) VALUES ($1, $2, $3) RETURNING id;
@@ -152,19 +153,15 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 
 	// INSERT PATIENT
 
+	// check patient by ref id
 	var (
-		patientID    int
-		patientRefID string
-		isCreateable bool = false
+		patientID        int
+		trimPatientRefId string = strings.Replace(req.MedicationRequest.Subject.Reference, "Patient/", "", 1)
 	)
 
-	row = tx.QueryRow(ctx, qCheckPatient, req.MedicationRequest.Subject.Reference)
-	err = row.Scan(&patientRefID)
-	if err != nil {
-		if err.Error() == pgx.ErrNoRows.Error() {
-			isCreateable = true
-		}
-
+	row = tx.QueryRow(ctx, qCheckPatient, trimPatientRefId)
+	err = row.Scan(&patientID)
+	if err != nil && err.Error() != pgx.ErrNoRows.Error() { // exclude ErrNoRows first, for clean handling purposes
 		errRollback := tx.Rollback(ctx)
 		if errRollback != nil {
 			pr.Logger.Error("PrescriptionRepositoryImpl.Insert ERROR rollback TX", errRollback)
@@ -177,8 +174,9 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 		return err
 	}
 
-	if isCreateable {
-		row = tx.QueryRow(ctx, qInsertPatient, req.MedicationRequest.Subject.Reference, req.MedicationRequest.Subject.Display, phoneNumber)
+	// check error again, if ref id patient is not exists, then create patient
+	if err != nil && err.Error() == pgx.ErrNoRows.Error() {
+		row = tx.QueryRow(ctx, qInsertPatient, trimPatientRefId, req.MedicationRequest.Subject.Display, phoneNumber)
 
 		err = row.Scan(&patientID)
 		if err != nil {
@@ -330,6 +328,47 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 }
 
 func (pr *PrescriptionRepositoryImpl) GetByPatientID(ctx context.Context, patientID string) ([]model.Prescription, error) {
-	// TODO : implement Get Prescription By Patient ID
-	return []model.Prescription{}, nil
+	q := `
+		SELECT 
+			m.id,
+			m.code,
+			m.code_display as display
+		FROM
+			medication m
+		JOIN
+			medication_request mr
+		ON
+			mr.medication_id = m.id
+		JOIN
+			patient p
+		ON
+			mr.patient_id = p.id
+		WHERE 
+			p.ref_id = $1
+	`
+
+	var prescriptions []model.Prescription
+	rows, err := pr.DB.Query(ctx, q, patientID)
+	if err != nil {
+		pr.Logger.Error("PrescriptionRepositoryImpl.GetByPatientID Query ERROR", err)
+
+		return []model.Prescription{}, err
+	}
+
+	for rows.Next() {
+		prescription := model.Prescription{}
+
+		err := rows.Scan(
+			&prescription.ID,
+			&prescription.Code,
+			&prescription.Display,
+		)
+		if err != nil {
+			pr.Logger.Error("PrescriptionRepositoryImpl.GetByPatientID rows Scan ERROR", err)
+		}
+
+		prescriptions = append(prescriptions, prescription)
+	}
+
+	return prescriptions, nil
 }
