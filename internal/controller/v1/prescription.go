@@ -15,7 +15,7 @@ type (
 	// PrescriptionController is an interface that has all the function to be implemented inside prescription controller
 	PrescriptionController interface {
 		Create(ctx echo.Context) error
-		GetByPatientID(ctx echo.Context) error
+		GetByID(ctx echo.Context) error
 	}
 
 	// PrescriptionControllerImpl is an app prescription struct that consists of all the dependencies needed for prescription controller
@@ -51,10 +51,10 @@ func (pc *PrescriptionControllerImpl) Create(ctx echo.Context) error {
 	return helper.NewResponses[any](ctx, http.StatusCreated, "Success Create Prescription", nil, nil, nil)
 }
 
-func (pc *PrescriptionControllerImpl) GetByPatientID(ctx echo.Context) error {
-	patientID := ctx.Param("patientID")
+func (pc *PrescriptionControllerImpl) GetByID(ctx echo.Context) error {
+	id := ctx.Param("id")
 
-	results, err := pc.PrescriptionSvc.GetByPatientID(ctx.Request().Context(), patientID)
+	results, err := pc.PrescriptionSvc.GetByID(ctx.Request().Context(), id)
 	if err != nil {
 		return helper.NewResponses[any](ctx, http.StatusInternalServerError, "Error Get Prescription", nil, err, nil)
 	}

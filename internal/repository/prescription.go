@@ -18,7 +18,7 @@ type (
 	// PrescriptionRepository is an interface that has all the function to be implemented inside health check repository
 	PrescriptionRepository interface {
 		Insert(ctx context.Context, req *model.PrescriptionRequest, phoneNumber string) error
-		GetByPatientID(ctx context.Context, patientID string) ([]model.Prescription, error)
+		GetByID(ctx context.Context, id string) ([]model.Prescription, error)
 	}
 
 	// PrescriptionRepositoryImpl is an app health check struct that consists of all the dependencies needed for perscription repository
@@ -56,12 +56,7 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 		INSERT INTO patient (ref_id, name, phone_number) VALUES ($1, $2, $3) RETURNING id;
 	`
 	qInsertMedicationRequest := `
-		INSERT INTO medication_request (medication_id,ref_id,status,patient_id,reason,intent,category,reported,encounter,requester,performer,recorder,note,insurance,course_of_therapy_type,dosage_instructions,dispense_request,substitution,raw_request) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id
-	`
-	qInsertMedicationRequestIdentifier := `
-		INSERT INTO medication_request_identifier (
-			medication_request_id,system,use,value
-		) VALUES %s
+		INSERT INTO medication_request (medication_id,ref_id,status,patient_id,prescription_id,prescription_item_id,reason,intent,category,reported,encounter,requester,performer,recorder,note,insurance,course_of_therapy_type,dosage_instructions,dispense_request,substitution,raw_request) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING id
 	`
 
 	tx, err := pr.DB.Begin(ctx)
@@ -255,6 +250,8 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 		req.MedicationRequest.ID,
 		req.MedicationRequest.Status,
 		patientID,
+		req.MedicationRequest.Identifier[0].Value,
+		req.MedicationRequest.Identifier[1].Value,
 		req.MedicationRequest.ReasonCode[0].Coding[0].Display,
 		req.MedicationRequest.Intent,
 		req.MedicationRequest.Category[0].Coding[0].Code,
@@ -286,30 +283,6 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 		return err
 	}
 
-	// INSERT BULK MEDICATION REQUEST IDENTIFIER
-	numberArgsPerRowMedicationRequestIdentifiers := 4
-	valueArgsMedicationRequestIdentifiers := make([]interface{}, 0, numberArgsPerRowMedicationRequestIdentifiers*len(req.MedicationRequest.Identifier))
-
-	for i := 0; i < len(req.MedicationRequest.Identifier); i++ {
-		valueArgsMedicationRequestIdentifiers = append(valueArgsMedicationRequestIdentifiers, medicationRequestID, req.MedicationRequest.Identifier[i].System, req.MedicationRequest.Identifier[i].Use, req.MedicationRequest.Identifier[i].Value)
-	}
-
-	qInsertMedicationRequestIdentifier = helper.BulkInsert(qInsertMedicationRequestIdentifier, numberArgsPerRowMedicationRequestIdentifiers, len(req.MedicationRequest.Identifier))
-
-	_, err = tx.Exec(ctx, qInsertMedicationRequestIdentifier, valueArgsMedicationRequestIdentifiers...)
-	if err != nil {
-		errRollback := tx.Rollback(ctx)
-		if errRollback != nil {
-			pr.Logger.Error("PrescriptionRepositoryImpl.Insert ERROR rollback TX", errRollback)
-
-			return errRollback
-		}
-
-		pr.Logger.Error("PrescriptionRepositoryImpl.Insert ERROR Exec Insert Bulk Medication Request Identifiers", err)
-
-		return err
-	}
-
 	err = tx.Commit(ctx)
 	if err != nil {
 		errRollback := tx.Rollback(ctx)
@@ -327,7 +300,7 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 	return nil
 }
 
-func (pr *PrescriptionRepositoryImpl) GetByPatientID(ctx context.Context, patientID string) ([]model.Prescription, error) {
+func (pr *PrescriptionRepositoryImpl) GetByID(ctx context.Context, id string) ([]model.Prescription, error) {
 	q := `
 		SELECT 
 			m.id,
@@ -339,18 +312,14 @@ func (pr *PrescriptionRepositoryImpl) GetByPatientID(ctx context.Context, patien
 			medication_request mr
 		ON
 			mr.medication_id = m.id
-		JOIN
-			patient p
-		ON
-			mr.patient_id = p.id
 		WHERE 
-			p.ref_id = $1
+			mr.prescription_id = $1
 	`
 
 	var prescriptions []model.Prescription
-	rows, err := pr.DB.Query(ctx, q, patientID)
+	rows, err := pr.DB.Query(ctx, q, id)
 	if err != nil {
-		pr.Logger.Error("PrescriptionRepositoryImpl.GetByPatientID Query ERROR", err)
+		pr.Logger.Error("PrescriptionRepositoryImpl.GetByID Query ERROR", err)
 
 		return []model.Prescription{}, err
 	}
@@ -364,7 +333,7 @@ func (pr *PrescriptionRepositoryImpl) GetByPatientID(ctx context.Context, patien
 			&prescription.Display,
 		)
 		if err != nil {
-			pr.Logger.Error("PrescriptionRepositoryImpl.GetByPatientID rows Scan ERROR", err)
+			pr.Logger.Error("PrescriptionRepositoryImpl.GetByID rows Scan ERROR", err)
 		}
 
 		prescriptions = append(prescriptions, prescription)

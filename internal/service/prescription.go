@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"strings"
 
 	"e-resep-be/internal/config"
 	"e-resep-be/internal/model"
@@ -14,7 +13,7 @@ type (
 	// PrescriptionService is an interface that has all the function to be implemented inside prescription service
 	PrescriptionService interface {
 		Create(ctx context.Context, req *model.PrescriptionRequest, phoneNumber string) error
-		GetByPatientID(ctx context.Context, patientID string) ([]model.Prescription, error)
+		GetByID(ctx context.Context, id string) ([]model.Prescription, error)
 	}
 
 	// PrescriptionServiceImpl is an app prescription struct that consists of all the dependencies needed for prescription service
@@ -47,8 +46,7 @@ func (ps *PrescriptionServiceImpl) Create(ctx context.Context, req *model.Prescr
 
 	if phoneNumber != "" {
 		// send message to patient number through whatsapp
-		trimPatientRefId := strings.Replace(req.MedicationRequest.Subject.Reference, "Patient/", "", 1)
-		err = ps.WhatsappRequester.SendMessageByRecipentNumber(ctx, req.MedicationRequest.Subject.Display, trimPatientRefId, phoneNumber, model.TemplateSendPrescription)
+		err = ps.WhatsappRequester.SendMessageByRecipentNumber(ctx, req.MedicationRequest.Subject.Display, req.MedicationRequest.Identifier[0].Value, phoneNumber, model.TemplateSendPrescription)
 		if err != nil {
 			return err
 		}
@@ -57,8 +55,8 @@ func (ps *PrescriptionServiceImpl) Create(ctx context.Context, req *model.Prescr
 	return nil
 }
 
-func (ps *PrescriptionServiceImpl) GetByPatientID(ctx context.Context, patientID string) ([]model.Prescription, error) {
-	prescriptions, err := ps.PrescriptionRepo.GetByPatientID(ctx, patientID)
+func (ps *PrescriptionServiceImpl) GetByID(ctx context.Context, id string) ([]model.Prescription, error) {
+	prescriptions, err := ps.PrescriptionRepo.GetByID(ctx, id)
 	if err != nil {
 		return []model.Prescription{}, err
 	}

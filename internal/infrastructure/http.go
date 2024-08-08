@@ -24,6 +24,6 @@ func setupRouter(app *application.App) {
 
 		v1.POST("/prescription", dep.PrescriptionController.Create)
 
-		v1.GET("/prescription/:patientID", dep.PrescriptionController.GetByPatientID)
+		v1.GET("/prescription/:id", dep.PrescriptionController.GetByID)
 	}
 }
