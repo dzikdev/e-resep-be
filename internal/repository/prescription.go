@@ -334,6 +334,7 @@ func (pr *PrescriptionRepositoryImpl) GetByID(ctx context.Context, id string) ([
 		)
 		if err != nil {
 			pr.Logger.Error("PrescriptionRepositoryImpl.GetByID rows Scan ERROR", err)
+			return []model.Prescription{}, err
 		}
 
 		prescriptions = append(prescriptions, prescription)
