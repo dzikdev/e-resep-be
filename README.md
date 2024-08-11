@@ -5,6 +5,8 @@ Receipt Medicine Delivery Services
 - **Golang** _(using echo framework)_
 - **PostgreSQL**
 - **Docker & Docker Compose** _(for deployment)_
+- **Xendit** _(Payment Gateway)_
+- **Kimia Farma** _(External Services)_
 
 ## Prerequisites
 1. must have installed golang version 1.20 or higher  
