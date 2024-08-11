@@ -11,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
+	"github.com/xendit/xendit-go/v6"
 )
 
 // App..
@@ -21,6 +22,7 @@ type App struct {
 	Logger      *logrus.Logger
 	DB          *pgxpool.Pool
 	HTTPClient  *http.Client
+	XenditSDK   *xendit.APIClient
 }
 
 // SetupApplication configuring dependencies app needed
@@ -31,7 +33,7 @@ func SetupApplication(ctx context.Context) (*App, error) {
 	app.Context = context.TODO()
 	app.Config = config.NewConfig()
 
-	// custom log app with logrus
+	// initialize custom log app with logrus
 	logWithLogrus := logrus.New()
 	logWithLogrus.Formatter = &logrus.JSONFormatter{}
 	logWithLogrus.ReportCaller = true
@@ -44,15 +46,24 @@ func SetupApplication(ctx context.Context) (*App, error) {
 		return app, err
 	}
 
+	// initialize http client
 	app.HTTPClient = &http.Client{}
 
+	// initialize db pool
 	app.DB = dbpool
+
+	// initialize echo framework with config
 	app.Application = echo.New()
 	app.Application.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{"GET", "POST", "PUT", "DELETE"},
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
 	}))
+	app.Application.Use(middleware.RequestID())
+	app.Application.Use(middleware.Logger())
+
+	// initialize xendit sdk
+	app.XenditSDK = xendit.NewClient(app.Config.Xendit.XenditAPIKey)
 
 	app.Logger.Info("APP RUN SUCCESSFULLY ON PORT: ", app.Config.Server.AppPort)
 

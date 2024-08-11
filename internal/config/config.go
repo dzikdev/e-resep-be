@@ -9,6 +9,7 @@ type (
 		Const      *Const
 		Whatsapp   *Whatsapp
 		KimiaFarma *KimiaFarma
+		Xendit     *Xendit
 	}
 
 	Server struct {
@@ -38,6 +39,10 @@ type (
 	KimiaFarma struct {
 		KimiaFarmaURL string
 	}
+
+	Xendit struct {
+		XenditAPIKey string
+	}
 )
 
 func loadConfiguration() *Configuration {
@@ -64,6 +69,9 @@ func loadConfiguration() *Configuration {
 		},
 		KimiaFarma: &KimiaFarma{
 			KimiaFarmaURL: helper.GetEnvString("KIMIA_FARMA_URL"),
+		},
+		Xendit: &Xendit{
+			XenditAPIKey: helper.GetEnvString("XENDIT_API_KEY"),
 		},
 	}
 }
