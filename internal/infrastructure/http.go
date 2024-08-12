@@ -22,8 +22,19 @@ func setupRouter(app *application.App) {
 	{
 		v1.GET("/health-check", dep.HealthCheckController.Check)
 
-		v1.POST("/prescription", dep.PrescriptionController.Create)
+		prescription := v1.Group("/prescription")
+		{
+			prescription.POST("", dep.PrescriptionController.Create)
 
-		v1.GET("/prescription/:id", dep.PrescriptionController.GetByID)
+			prescription.GET("/:id", dep.PrescriptionController.GetByID)
+		}
+
+		address := v1.Group("/address")
+		{
+			address.GET("/province", dep.AddressController.GetProvince)
+			address.GET("/province/:id/cities", dep.AddressController.GetCityByProvinceID)
+			address.GET("/cities/:id/district", dep.AddressController.GetDistrictByCityID)
+			address.GET("/district/:id/sub-district", dep.AddressController.GetSubDistrictByDistrictID)
+		}
 	}
 }
