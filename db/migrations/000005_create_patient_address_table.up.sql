@@ -1,6 +1,6 @@
-CREATE TABLE IF NOT EXISTS transaction_address (
+CREATE TABLE IF NOT EXISTS patient_address (
   id SERIAL NOT NULL PRIMARY KEY,
-  transaction_id INT NOT NULL,
+  patient_id INT NOT NULL,
   address TEXT NOT NULL,
   sub_district VARCHAR(255) NOT NULL,
   district VARCHAR(255) NOT NULL,
