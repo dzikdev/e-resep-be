@@ -14,6 +14,7 @@ type (
 	PatientAddressRepository interface {
 		Insert(ctx context.Context, req *model.CreateOrUpdatePatientAddressRequest, patientID int) error
 		UpdateByID(ctx context.Context, req *model.CreateOrUpdatePatientAddressRequest, id int) error
+		GetByPatientID(ctx context.Context, patientID int) (*[]model.PatientAddress, error)
 	}
 
 	// AddressRepositoryImpl is an app address struct that consists of all the dependencies needed for patient address repository
@@ -63,4 +64,66 @@ func (pr *PatientAddressRepositoryImpl) UpdateByID(ctx context.Context, req *mod
 	}
 
 	return nil
+}
+
+func (pr *PatientAddressRepositoryImpl) GetByPatientID(ctx context.Context, patientID int) (*[]model.PatientAddress, error) {
+	q := `
+		SELECT
+			id,
+			patient_id,
+			address,
+			sub_district,
+			district,
+			city,
+			province,
+			postal_code,
+			SPLIT_PART(TRIM(coordinates ::TEXT, '()'), ',', 1)::FLOAT AS latitude,
+    	SPLIT_PART(TRIM(coordinates ::TEXT, '()'), ',', 2)::FLOAT AS longitude,
+			recipent_name,
+			recipent_phone_number,
+			additional_notes,
+			created_at
+		FROM
+			patient_address
+		WHERE
+			patient_id = $1
+	`
+
+	patientAddress := []model.PatientAddress{}
+
+	rows, err := pr.DB.Query(ctx, q, patientID)
+	if err != nil {
+		pr.Logger.Error("PatientAddressRepositoryImpl.GetByPatientID Query ERROR", err)
+
+		return nil, err
+	}
+
+	for rows.Next() {
+		pAddress := model.PatientAddress{}
+		err := rows.Scan(
+			&pAddress.ID,
+			&pAddress.PatientID,
+			&pAddress.Address,
+			&pAddress.SubDistrict,
+			&pAddress.District,
+			&pAddress.City,
+			&pAddress.Province,
+			&pAddress.PostalCode,
+			&pAddress.Latitude,
+			&pAddress.Longitude,
+			&pAddress.RecipentName,
+			&pAddress.RecipentPhoneNumber,
+			&pAddress.AdditionalNotes,
+			&pAddress.CreatedAt,
+		)
+		if err != nil {
+			pr.Logger.Error("PatientAddressRepositoryImpl.GetByPatientID rows.Scan ERROR", err)
+
+			return nil, err
+		}
+
+		patientAddress = append(patientAddress, pAddress)
+	}
+
+	return &patientAddress, nil
 }

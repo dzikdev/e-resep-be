@@ -18,7 +18,7 @@ type (
 	// PrescriptionRepository is an interface that has all the function to be implemented inside health check repository
 	PrescriptionRepository interface {
 		Insert(ctx context.Context, req *model.PrescriptionRequest, phoneNumber string) error
-		GetByID(ctx context.Context, id string) ([]model.Prescription, error)
+		GetByPrescriptionID(ctx context.Context, id string) ([]model.Prescription, error)
 	}
 
 	// PrescriptionRepositoryImpl is an app health check struct that consists of all the dependencies needed for perscription repository
@@ -300,18 +300,23 @@ func (pr *PrescriptionRepositoryImpl) Insert(ctx context.Context, req *model.Pre
 	return nil
 }
 
-func (pr *PrescriptionRepositoryImpl) GetByID(ctx context.Context, id string) ([]model.Prescription, error) {
+func (pr *PrescriptionRepositoryImpl) GetByPrescriptionID(ctx context.Context, id string) ([]model.Prescription, error) {
 	q := `
 		SELECT 
 			m.id,
 			m.code,
-			m.code_display as display
+			m.code_display as display,
+			p.ref_id as patient_id
 		FROM
 			medication m
 		JOIN
 			medication_request mr
 		ON
 			mr.medication_id = m.id
+		JOIN
+			patient p
+		ON
+			mr.patient_id = p.id
 		WHERE 
 			mr.prescription_id = $1
 	`
@@ -319,7 +324,7 @@ func (pr *PrescriptionRepositoryImpl) GetByID(ctx context.Context, id string) ([
 	var prescriptions []model.Prescription
 	rows, err := pr.DB.Query(ctx, q, id)
 	if err != nil {
-		pr.Logger.Error("PrescriptionRepositoryImpl.GetByID Query ERROR", err)
+		pr.Logger.Error("PrescriptionRepositoryImpl.GetByPrescriptionID Query ERROR", err)
 
 		return []model.Prescription{}, err
 	}
@@ -331,9 +336,10 @@ func (pr *PrescriptionRepositoryImpl) GetByID(ctx context.Context, id string) ([
 			&prescription.ID,
 			&prescription.Code,
 			&prescription.Display,
+			&prescription.PatientID,
 		)
 		if err != nil {
-			pr.Logger.Error("PrescriptionRepositoryImpl.GetByID rows Scan ERROR", err)
+			pr.Logger.Error("PrescriptionRepositoryImpl.GetByPrescriptionID rows Scan ERROR", err)
 			return []model.Prescription{}, err
 		}
 

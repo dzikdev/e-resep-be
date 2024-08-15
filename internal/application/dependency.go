@@ -12,6 +12,7 @@ type Dependency struct {
 	PrescriptionController   controllerV1.PrescriptionController
 	AddressController        controllerV1.AddressController
 	PatientAddressController controllerV1.PatientAddressController
+	PaymentController        controllerV1.PaymentController
 }
 
 func SetupDependencyInjection(app *App) *Dependency {
@@ -25,23 +26,27 @@ func SetupDependencyInjection(app *App) *Dependency {
 	addressRepoImpl := repository.NewAddressRepository(app.Context, app.Config, app.Logger, app.DB)
 	patientRepoImpl := repository.NewPatientRepository(app.Context, app.Config, app.Logger, app.DB)
 	patientAddressRepoImpl := repository.NewPatientAddressRepository(app.Context, app.Config, app.Logger, app.DB)
+	medicationRepoImpl := repository.NewMedicationRepository(app.Context, app.Config, app.Logger, app.DB)
 
 	// service
 	healthCheckSvcImpl := service.NewHealthCheckService(app.Context, app.Config, healthCheckRepoImpl)
 	prescriptionSvcImpl := service.NewPrescriptionService(app.Context, app.Config, prescriptionRepoImpl, whatsappRequesterImpl, kimiaFarmaRequesterImpl)
 	addressSvcImpl := service.NewAddressService(app.Context, app.Config, addressRepoImpl)
 	patientAddressSvcImpl := service.NewPatientAddressService(app.Context, app.Config, patientRepoImpl, patientAddressRepoImpl)
+	paymentSvc := service.NewPaymentService(app.Context, app.Config, medicationRepoImpl, patientRepoImpl, patientAddressRepoImpl, kimiaFarmaRequesterImpl)
 
 	// controller
 	healthCheckControllerImpl := controllerV1.NewHealthCheckController(app.Context, app.Config, healthCheckSvcImpl)
 	prescriptionControllerImpl := controllerV1.NewPrescriptionController(app.Context, app.Config, prescriptionSvcImpl)
 	addressControllerImpl := controllerV1.NewAddressController(app.Context, app.Config, addressSvcImpl)
 	patientAddressControllerImpl := controllerV1.NewPatientAddressController(app.Context, app.Config, patientAddressSvcImpl)
+	paymentControllerImpl := controllerV1.NewPaymentController(app.Context, app.Config, paymentSvc)
 
 	return &Dependency{
 		HealthCheckController:    healthCheckControllerImpl,
 		PrescriptionController:   prescriptionControllerImpl,
 		AddressController:        addressControllerImpl,
 		PatientAddressController: patientAddressControllerImpl,
+		PaymentController:        paymentControllerImpl,
 	}
 }

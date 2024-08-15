@@ -68,3 +68,10 @@ type Quantity struct {
 	System string  `json:"system"`
 	Value  float64 `json:"value"`
 }
+
+type MedicationDB struct {
+	ID      int    `db:"id" json:"id"`
+	RefID   string `db:"ref_id" json:"ref_id"`
+	Code    string `db:"code" json:"code"`
+	Display string `db:"display" json:"display"`
+}
