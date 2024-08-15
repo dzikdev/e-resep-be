@@ -26,7 +26,7 @@ func setupRouter(app *application.App) {
 		{
 			prescription.POST("", dep.PrescriptionController.Create)
 
-			prescription.GET("/:id", dep.PrescriptionController.GetByID)
+			prescription.GET("/:id", dep.PrescriptionController.GetByPrescriptionID)
 		}
 
 		v1.GET("/province", dep.AddressController.GetProvince)
@@ -38,6 +38,11 @@ func setupRouter(app *application.App) {
 		{
 			patient.POST("/address", dep.PatientAddressController.Create)
 			patient.PUT("/address/:id", dep.PatientAddressController.Update)
+		}
+
+		payment := v1.Group("/payment")
+		{
+			payment.POST("/info", dep.PaymentController.GeneratePaymentInfo)
 		}
 
 	}
