@@ -15,6 +15,8 @@ type (
 	// PaymentController is an interface that has all the function to be implemented inside payment controller
 	PaymentController interface {
 		GeneratePaymentInfo(ctx echo.Context) error
+		CreatePayment(ctx echo.Context) error
+		PaymentNotification(ctx echo.Context) error
 	}
 
 	// PaymentControllerImpl is an app payment struct that consists of all the dependencies needed for payment controller
@@ -47,4 +49,28 @@ func (pc *PaymentControllerImpl) GeneratePaymentInfo(ctx echo.Context) error {
 	}
 
 	return helper.NewResponses[any](ctx, http.StatusOK, "Success Generate Payment Info", results, nil, nil)
+}
+
+func (pc *PaymentControllerImpl) CreatePayment(ctx echo.Context) error {
+	var paymentReq model.CreateTransactionRequest
+
+	if err := ctx.Bind(&paymentReq); err != nil {
+		return helper.NewResponses[any](ctx, http.StatusBadRequest, err.Error(), err.Error(), err, nil)
+	}
+
+	err := paymentReq.Validate()
+	if err != nil {
+		return helper.NewResponses[any](ctx, http.StatusBadRequest, err.Error(), err.Error(), err, nil)
+	}
+
+	results, err := pc.PaymentSvc.CreatePayment(ctx.Request().Context(), &paymentReq)
+	if err != nil {
+		return helper.NewResponses[any](ctx, http.StatusInternalServerError, "Error Create Payment", nil, err, nil)
+	}
+
+	return helper.NewResponses[any](ctx, http.StatusCreated, "Success Create Payment", results, nil, nil)
+}
+
+func (pc *PaymentControllerImpl) PaymentNotification(ctx echo.Context) error {
+	return nil
 }

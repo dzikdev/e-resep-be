@@ -1,6 +1,5 @@
 CREATE TABLE IF NOT EXISTS payment (
   id SERIAL NOT NULL PRIMARY KEY,
-  payment_method VARCHAR(255) NOT NULL,
   transaction_id INT NOT NULL,
   partner_id VARCHAR(255) NULL,
   completed_at TIMESTAMP NULL,

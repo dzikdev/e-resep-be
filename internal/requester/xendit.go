@@ -13,7 +13,7 @@ import (
 type (
 	// XenditRequester is an interface that has all the function to be implemented inside xendit requester
 	XenditRequester interface {
-		CreateInvoice(ctx context.Context, refID string, req invoice.CreateInvoiceRequest) (*invoice.Invoice, error)
+		CreateInvoice(ctx context.Context, req invoice.CreateInvoiceRequest) (*invoice.Invoice, error)
 		GetInvoiceByID(ctx context.Context, invoiceID string) (*invoice.Invoice, error)
 		ExpireInvoiceByID(ctx context.Context, invoiceID string) (*invoice.Invoice, error)
 	}
@@ -37,7 +37,7 @@ func NewXenditRequester(ctx context.Context, config *config.Configuration, logge
 	}
 }
 
-func (xr *XenditRequesterImpl) CreateInvoice(ctx context.Context, refID string, req invoice.CreateInvoiceRequest) (*invoice.Invoice, error) {
+func (xr *XenditRequesterImpl) CreateInvoice(ctx context.Context, req invoice.CreateInvoiceRequest) (*invoice.Invoice, error) {
 	resp, _, err := xr.XenditSDK.InvoiceApi.CreateInvoice(ctx).
 		CreateInvoiceRequest(req).
 		Execute()

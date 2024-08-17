@@ -43,6 +43,8 @@ func setupRouter(app *application.App) {
 		payment := v1.Group("/payment")
 		{
 			payment.POST("/info", dep.PaymentController.GeneratePaymentInfo)
+			payment.POST("", dep.PaymentController.CreatePayment)
+			payment.POST("/notification", dep.PaymentController.PaymentNotification)
 		}
 
 	}
