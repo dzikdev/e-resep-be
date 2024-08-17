@@ -19,6 +19,7 @@ func SetupDependencyInjection(app *App) *Dependency {
 	// requester
 	whatsappRequesterImpl := requester.NewWhatsappRequester(app.Context, app.Config, app.Logger, app.HTTPClient)
 	kimiaFarmaRequesterImpl := requester.NewKimiaFarmaRequester(app.Context, app.Config, app.Logger, app.HTTPClient)
+	xenditRequesterImpl := requester.NewXenditRequester(app.Context, app.Config, app.Logger, app.XenditSDK)
 
 	// repository
 	healthCheckRepoImpl := repository.NewHealthCheckRepository(app.Context, app.Config, app.Logger, app.DB)
@@ -27,13 +28,15 @@ func SetupDependencyInjection(app *App) *Dependency {
 	patientRepoImpl := repository.NewPatientRepository(app.Context, app.Config, app.Logger, app.DB)
 	patientAddressRepoImpl := repository.NewPatientAddressRepository(app.Context, app.Config, app.Logger, app.DB)
 	medicationRepoImpl := repository.NewMedicationRepository(app.Context, app.Config, app.Logger, app.DB)
+	transactionRepoImpl := repository.NewTransactionRepository(app.Context, app.Config, app.Logger, app.DB)
+	paymentRepoImpl := repository.NewPaymentRepository(app.Context, app.Config, app.Logger, app.DB)
 
 	// service
 	healthCheckSvcImpl := service.NewHealthCheckService(app.Context, app.Config, healthCheckRepoImpl)
 	prescriptionSvcImpl := service.NewPrescriptionService(app.Context, app.Config, prescriptionRepoImpl, whatsappRequesterImpl, kimiaFarmaRequesterImpl)
 	addressSvcImpl := service.NewAddressService(app.Context, app.Config, addressRepoImpl)
 	patientAddressSvcImpl := service.NewPatientAddressService(app.Context, app.Config, patientRepoImpl, patientAddressRepoImpl)
-	paymentSvc := service.NewPaymentService(app.Context, app.Config, medicationRepoImpl, patientRepoImpl, patientAddressRepoImpl, kimiaFarmaRequesterImpl)
+	paymentSvc := service.NewPaymentService(app.Context, app.Config, medicationRepoImpl, patientRepoImpl, patientAddressRepoImpl, transactionRepoImpl, paymentRepoImpl, kimiaFarmaRequesterImpl, xenditRequesterImpl)
 
 	// controller
 	healthCheckControllerImpl := controllerV1.NewHealthCheckController(app.Context, app.Config, healthCheckSvcImpl)

@@ -9,6 +9,8 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 )
 
+require github.com/go-ozzo/ozzo-validation/v4 v4.3.0
+
 require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
