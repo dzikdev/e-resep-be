@@ -5,5 +5,6 @@ CREATE TABLE IF NOT EXISTS payment (
   completed_at TIMESTAMP NULL,
   status VARCHAR(255) NOT NULL,
   final_price DECIMAL(12) NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NULL
 )
