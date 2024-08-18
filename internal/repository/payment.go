@@ -3,7 +3,10 @@ package repository
 import (
 	"context"
 	"e-resep-be/internal/config"
+	"e-resep-be/internal/helper"
 	"e-resep-be/internal/model"
+	"fmt"
+	"reflect"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
@@ -13,8 +16,8 @@ type (
 	// PaymentRepository is an interface that has all the function to be implemented inside payment repository
 	PaymentRepository interface {
 		Insert(ctx context.Context, req *model.CreatePaymentRequest) (int, error)
-		UpdateStatusByID(ctx context.Context, status model.PaymentStatusEnum, id int) error
-		UpdatePartnerIDByID(ctx context.Context, partnerID string, id int) error
+		UpdateByID(ctx context.Context, req model.Payment, id int) error
+		GetByID(ctx context.Context, id int) (*model.Payment, error)
 	}
 
 	// TransactionRepositoryImpl is an app payment struct that consists of all the dependencies needed for payment repository
@@ -55,14 +58,36 @@ func (pr *PaymentRepositoryImpl) Insert(ctx context.Context, req *model.CreatePa
 	return paymentID, nil
 }
 
-func (pr *PaymentRepositoryImpl) UpdateStatusByID(ctx context.Context, status model.PaymentStatusEnum, id int) error {
+func (pr *PaymentRepositoryImpl) UpdateByID(ctx context.Context, req model.Payment, id int) error {
 	q := `
-		UPDATE payment SET status = $1 WHERE id = $2
+		UPDATE payment SET updated_at = NOW()
 	`
+	values := make([]interface{}, 0)
 
-	_, err := pr.DB.Exec(ctx, q, status, id)
+	paymentType := reflect.TypeOf(req)
+	paymentValue := reflect.ValueOf(req)
+
+	for i := 0; i < paymentType.NumField(); i++ {
+		field := paymentType.Field(i)
+		value := paymentValue.Field(i)
+
+		if value.Interface() != reflect.Zero(field.Type).Interface() {
+			fieldName := field.Tag.Get("db")
+			if fieldName == "completed_at" {
+				formattedPaidAt := req.CompletedAt.In(helper.TimezoneJakarta).Format("2006-01-02 15:04:05.999999-07:00")
+				q += fmt.Sprintf(`, "%s"='%v'`, fieldName, formattedPaidAt)
+			} else {
+				q += fmt.Sprintf(`, "%s"='%v'`, fieldName, value.Interface())
+			}
+
+		}
+	}
+
+	q += fmt.Sprintf(` WHERE id='%d'`, id)
+
+	_, err := pr.DB.Exec(ctx, q, values...)
 	if err != nil {
-		pr.Logger.Error("PaymentRepositoryImpl.UpdateStatusByID Exec ERROR", err)
+		pr.Logger.Error("PaymentRepositoryImpl.UpdateByID Exec ERROR", err)
 
 		return err
 	}
@@ -70,17 +95,40 @@ func (pr *PaymentRepositoryImpl) UpdateStatusByID(ctx context.Context, status mo
 	return nil
 }
 
-func (pr *PaymentRepositoryImpl) UpdatePartnerIDByID(ctx context.Context, partnerID string, id int) error {
+func (pr *PaymentRepositoryImpl) GetByID(ctx context.Context, id int) (*model.Payment, error) {
 	q := `
-		UPDATE payment SET partner_id = $1 WHERE id = $2
+		SELECT
+			id,
+			transaction_id,
+			partner_id,
+			completed_at,
+			status,
+			final_price,
+			created_at,
+			updated_at
+		FROM
+			payment
+		WHERE
+			id = $1
 	`
 
-	_, err := pr.DB.Exec(ctx, q, partnerID, id)
+	payment := model.Payment{}
+	row := pr.DB.QueryRow(ctx, q, id)
+	err := row.Scan(
+		&payment.ID,
+		&payment.TransactionID,
+		&payment.PartnerID,
+		&payment.CompletedAt,
+		&payment.Status,
+		&payment.FinalPrice,
+		&payment.CreatedAt,
+		&payment.UpdatedAt,
+	)
 	if err != nil {
-		pr.Logger.Error("PaymentRepositoryImpl.UpdatePartnerIDByID Exec ERROR", err)
+		pr.Logger.Error("PaymentRepositoryImpl.GetByID QueryRow.Scan ERROR", err)
 
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &payment, nil
 }

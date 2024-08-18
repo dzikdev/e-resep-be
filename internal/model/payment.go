@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type (
 	PaymentStatusEnum string
 
@@ -33,6 +35,17 @@ type (
 	CreatePaymentResponse struct {
 		ID         string `json:"id"`
 		InvoiceURL string `json:"invoice_url"`
+	}
+
+	Payment struct {
+		ID            int               `db:"id" json:"id"`
+		TransactionID int               `db:"transaction_id" json:"transaction_id"`
+		PartnerID     string            `db:"partner_id" json:"partner_id"`
+		CompletedAt   *time.Time        `db:"completed_at" json:"completed_at"`
+		Status        PaymentStatusEnum `db:"status" json:"status"`
+		FinalPrice    int               `db:"final_price" json:"final_price"`
+		CreatedAt     time.Time         `db:"created_at" json:"created_at"`
+		UpdatedAt     *time.Time        `db:"updated_at" json:"updated_at"`
 	}
 )
 

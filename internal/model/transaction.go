@@ -25,6 +25,17 @@ type (
 		Price          int       `db:"price" json:"price"`
 		CreatedAt      time.Time `db:"created_at" json:"created_at"`
 	}
+
+	Transaction struct {
+		ID               int                   `db:"id" json:"id"`
+		PatientID        int                   `db:"patient_id" json:"patient_id"`
+		PatientAddressID int                   `db:"patient_address_id" json:"patient_address_id"`
+		Status           TransactionStatusEnum `db:"status" json:"status"`
+		AdditionalPrice  int                   `db:"additional_price" json:"additional_price"`
+		TotalPrice       int                   `db:"total_price" json:"total_price"`
+		CreatedAt        time.Time             `db:"created_at" json:"created_at"`
+		UpdatedAt        *time.Time            `db:"updated_at" json:"updated_at"`
+	}
 )
 
 const (

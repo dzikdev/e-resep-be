@@ -5,6 +5,8 @@ import (
 	"e-resep-be/internal/config"
 	"e-resep-be/internal/helper"
 	"e-resep-be/internal/model"
+	"fmt"
+	"reflect"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/sirupsen/logrus"
@@ -15,7 +17,8 @@ type (
 	TransactionRepository interface {
 		Insert(ctx context.Context, req *model.CreateTransactionRequest) (int, error)
 		GetDetailsByTransactionID(ctx context.Context, transactionID int) ([]model.TransactionDetail, error)
-		UpdateStatusByID(ctx context.Context, status model.TransactionStatusEnum, id int) error
+		UpdateByID(ctx context.Context, req model.Transaction, id int) error
+		GetByID(ctx context.Context, id int) (*model.Transaction, error)
 	}
 
 	// TransactionRepositoryImpl is an app transaction struct that consists of all the dependencies needed for transaction repository
@@ -157,17 +160,71 @@ func (tr *TransactionRepositoryImpl) GetDetailsByTransactionID(ctx context.Conte
 	return transactionDetails, nil
 }
 
-func (tr *TransactionRepositoryImpl) UpdateStatusByID(ctx context.Context, status model.TransactionStatusEnum, id int) error {
+func (tr *TransactionRepositoryImpl) UpdateByID(ctx context.Context, req model.Transaction, id int) error {
 	q := `
-		UPDATE transaction SET status = $1 WHERE id = $2
+		UPDATE transaction SET updated_at = NOW()
 	`
+	values := make([]interface{}, 0)
 
-	_, err := tr.DB.Exec(ctx, q, status, id)
+	paymentType := reflect.TypeOf(req)
+	paymentValue := reflect.ValueOf(req)
+
+	for i := 0; i < paymentType.NumField(); i++ {
+		field := paymentType.Field(i)
+		value := paymentValue.Field(i)
+
+		if value.Interface() != reflect.Zero(field.Type).Interface() {
+			fieldName := field.Tag.Get("db")
+			q += fmt.Sprintf(`, "%s"='%v'`, fieldName, value.Interface())
+		}
+	}
+
+	q += fmt.Sprintf(` WHERE id='%d'`, id)
+
+	_, err := tr.DB.Exec(ctx, q, values...)
 	if err != nil {
-		tr.Logger.Error("TransactionRepositoryImpl.UpdateStatusByID Exec ERROR", err)
+		tr.Logger.Error("TransactionRepositoryImpl.UpdateByID Exec ERROR", err)
 
 		return err
 	}
 
 	return nil
+}
+
+func (tr *TransactionRepositoryImpl) GetByID(ctx context.Context, id int) (*model.Transaction, error) {
+	q := `
+		SELECT
+			id,
+			patient_id,
+			patient_address_id,
+			status,
+			additional_price,
+			total_price,
+			created_at,
+			updated_at
+		FROM
+			transaction
+		WHERE
+			id = $1
+	`
+
+	transaction := model.Transaction{}
+	row := tr.DB.QueryRow(ctx, q, id)
+	err := row.Scan(
+		&transaction.ID,
+		&transaction.PatientID,
+		&transaction.PatientAddressID,
+		&transaction.Status,
+		&transaction.AdditionalPrice,
+		&transaction.TotalPrice,
+		&transaction.CreatedAt,
+		&transaction.UpdatedAt,
+	)
+	if err != nil {
+		tr.Logger.Error("TransactionRepositoryImpl.GetByID QueryRow.Scan ERROR", err)
+
+		return nil, err
+	}
+
+	return &transaction, nil
 }

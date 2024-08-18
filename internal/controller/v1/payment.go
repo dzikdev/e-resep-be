@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/xendit/xendit-go/v6/invoice"
 )
 
 type (
@@ -72,5 +73,16 @@ func (pc *PaymentControllerImpl) CreatePayment(ctx echo.Context) error {
 }
 
 func (pc *PaymentControllerImpl) PaymentNotification(ctx echo.Context) error {
-	return nil
+	var notificationReq invoice.InvoiceCallback
+
+	if err := ctx.Bind(&notificationReq); err != nil {
+		return helper.NewResponses[any](ctx, http.StatusBadRequest, err.Error(), err.Error(), err, nil)
+	}
+
+	err := pc.PaymentSvc.HandleWebhookNotification(ctx.Request().Context(), notificationReq)
+	if err != nil {
+		return helper.NewResponses[any](ctx, http.StatusInternalServerError, "Error Payment Notification", nil, err, nil)
+	}
+
+	return helper.NewResponses[any](ctx, http.StatusOK, "Success Processed Payment Notificaion", nil, nil, nil)
 }
