@@ -12,6 +12,7 @@ type Dependency struct {
 	PrescriptionController   controllerV1.PrescriptionController
 	AddressController        controllerV1.AddressController
 	PatientAddressController controllerV1.PatientAddressController
+	TransactionController    controllerV1.TransactionController
 	PaymentController        controllerV1.PaymentController
 }
 
@@ -36,7 +37,8 @@ func SetupDependencyInjection(app *App) *Dependency {
 	prescriptionSvcImpl := service.NewPrescriptionService(app.Context, app.Config, prescriptionRepoImpl, whatsappRequesterImpl, kimiaFarmaRequesterImpl)
 	addressSvcImpl := service.NewAddressService(app.Context, app.Config, addressRepoImpl)
 	patientAddressSvcImpl := service.NewPatientAddressService(app.Context, app.Config, patientRepoImpl, patientAddressRepoImpl)
-	paymentSvc := service.NewPaymentService(app.Context, app.Config, medicationRepoImpl, patientRepoImpl, patientAddressRepoImpl, transactionRepoImpl, paymentRepoImpl, kimiaFarmaRequesterImpl, xenditRequesterImpl)
+	paymentSvc := service.NewPaymentService(app.Context, app.Config, medicationRepoImpl, patientRepoImpl, patientAddressRepoImpl, transactionRepoImpl, paymentRepoImpl, kimiaFarmaRequesterImpl)
+	transactionSvc := service.NewTransactionService(app.Context, app.Config, patientRepoImpl, transactionRepoImpl, paymentRepoImpl, xenditRequesterImpl)
 
 	// controller
 	healthCheckControllerImpl := controllerV1.NewHealthCheckController(app.Context, app.Config, healthCheckSvcImpl)
@@ -44,6 +46,7 @@ func SetupDependencyInjection(app *App) *Dependency {
 	addressControllerImpl := controllerV1.NewAddressController(app.Context, app.Config, addressSvcImpl)
 	patientAddressControllerImpl := controllerV1.NewPatientAddressController(app.Context, app.Config, patientAddressSvcImpl)
 	paymentControllerImpl := controllerV1.NewPaymentController(app.Context, app.Config, paymentSvc)
+	transactionControllerImpl := controllerV1.NewTransactionController(app.Context, app.Config, transactionSvc)
 
 	return &Dependency{
 		HealthCheckController:    healthCheckControllerImpl,
@@ -51,5 +54,6 @@ func SetupDependencyInjection(app *App) *Dependency {
 		AddressController:        addressControllerImpl,
 		PatientAddressController: patientAddressControllerImpl,
 		PaymentController:        paymentControllerImpl,
+		TransactionController:    transactionControllerImpl,
 	}
 }

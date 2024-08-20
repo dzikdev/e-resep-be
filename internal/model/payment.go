@@ -32,11 +32,6 @@ type (
 		FinalPrice    int `db:"final_price" json:"final_price"`
 	}
 
-	CreatePaymentResponse struct {
-		ID         string `json:"id"`
-		InvoiceURL string `json:"invoice_url"`
-	}
-
 	Payment struct {
 		ID            int               `db:"id" json:"id"`
 		TransactionID int               `db:"transaction_id" json:"transaction_id"`

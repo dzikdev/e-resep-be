@@ -18,6 +18,7 @@ type (
 		Insert(ctx context.Context, req *model.CreatePaymentRequest) (int, error)
 		UpdateByID(ctx context.Context, req model.Payment, id int) error
 		GetByID(ctx context.Context, id int) (*model.Payment, error)
+		GetByPartnerID(ctx context.Context, partnerID string) (*model.Payment, error)
 	}
 
 	// TransactionRepositoryImpl is an app payment struct that consists of all the dependencies needed for payment repository
@@ -126,6 +127,44 @@ func (pr *PaymentRepositoryImpl) GetByID(ctx context.Context, id int) (*model.Pa
 	)
 	if err != nil {
 		pr.Logger.Error("PaymentRepositoryImpl.GetByID QueryRow.Scan ERROR", err)
+
+		return nil, err
+	}
+
+	return &payment, nil
+}
+
+func (pr *PaymentRepositoryImpl) GetByPartnerID(ctx context.Context, partnerID string) (*model.Payment, error) {
+	q := `
+		SELECT
+			id,
+			transaction_id,
+			partner_id,
+			completed_at,
+			status,
+			final_price,
+			created_at,
+			updated_at
+		FROM
+			payment
+		WHERE
+			partner_id = $1
+	`
+
+	payment := model.Payment{}
+	row := pr.DB.QueryRow(ctx, q, partnerID)
+	err := row.Scan(
+		&payment.ID,
+		&payment.TransactionID,
+		&payment.PartnerID,
+		&payment.CompletedAt,
+		&payment.Status,
+		&payment.FinalPrice,
+		&payment.CreatedAt,
+		&payment.UpdatedAt,
+	)
+	if err != nil {
+		pr.Logger.Error("PaymentRepositoryImpl.GetByPartnerID QueryRow.Scan ERROR", err)
 
 		return nil, err
 	}

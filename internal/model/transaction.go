@@ -36,6 +36,16 @@ type (
 		CreatedAt        time.Time             `db:"created_at" json:"created_at"`
 		UpdatedAt        *time.Time            `db:"updated_at" json:"updated_at"`
 	}
+
+	CreateTransactionResponse struct {
+		ID         string `json:"id"`
+		InvoiceURL string `json:"invoice_url"`
+	}
+
+	CheckStatusTransactionResponse struct {
+		Transaction *Transaction         `json:"transaction"`
+		Items       *[]TransactionDetail `json:"items"`
+	}
 )
 
 const (
