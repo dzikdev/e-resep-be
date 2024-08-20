@@ -17,7 +17,6 @@ type (
 	// PaymentService is an interface that has all the function to be implemented inside payment service
 	PaymentService interface {
 		GeneratePaymentInfo(ctx context.Context, req *model.GeneratePaymentInfoRequest) (*model.PaymentInfo, error)
-		CreatePayment(ctx context.Context, req *model.CreateTransactionRequest) (*model.CreatePaymentResponse, error)
 		HandleWebhookNotification(ctx context.Context, req invoice.InvoiceCallback) error
 	}
 
@@ -31,12 +30,11 @@ type (
 		TransactionRepo     repository.TransactionRepository
 		PaymentRepo         repository.PaymentRepository
 		KimiaFarmaRequester requester.KimiaFarmaRequester
-		XenditRequester     requester.XenditRequester
 	}
 )
 
 // NewPaymentService return new instances payment service
-func NewPaymentService(ctx context.Context, config *config.Configuration, medicationRepo repository.MedicationRepository, patientRepo repository.PatientRepository, patientAddressRepo repository.PatientAddressRepository, transactionRepo repository.TransactionRepository, paymentRepo repository.PaymentRepository, kimiaFarmaRequester requester.KimiaFarmaRequester, xenditRequester requester.XenditRequester) *PaymentServiceImpl {
+func NewPaymentService(ctx context.Context, config *config.Configuration, medicationRepo repository.MedicationRepository, patientRepo repository.PatientRepository, patientAddressRepo repository.PatientAddressRepository, transactionRepo repository.TransactionRepository, paymentRepo repository.PaymentRepository, kimiaFarmaRequester requester.KimiaFarmaRequester) *PaymentServiceImpl {
 	return &PaymentServiceImpl{
 		Context:             ctx,
 		Config:              config,
@@ -46,7 +44,6 @@ func NewPaymentService(ctx context.Context, config *config.Configuration, medica
 		TransactionRepo:     transactionRepo,
 		PaymentRepo:         paymentRepo,
 		KimiaFarmaRequester: kimiaFarmaRequester,
-		XenditRequester:     xenditRequester,
 	}
 }
 
@@ -109,93 +106,6 @@ func (ps *PaymentServiceImpl) GeneratePaymentInfo(ctx context.Context, req *mode
 	}
 
 	return &resp, nil
-}
-
-func (ps *PaymentServiceImpl) CreatePayment(ctx context.Context, req *model.CreateTransactionRequest) (*model.CreatePaymentResponse, error) {
-	// validate total price is same with sum price inside each item
-	totalPriceInItems := 0
-	for _, item := range req.Items {
-		totalPriceInItems += item.Price
-	}
-
-	if totalPriceInItems != req.TotalPrice {
-		return nil, model.NewError(model.Validation, "invalid total price")
-	}
-
-	// get patient by id
-	patient, err := ps.PatientRepo.GetByID(ctx, req.PatientID)
-	if err != nil {
-		return nil, err
-	}
-
-	// insert trx & trx details
-	transactionID, err := ps.TransactionRepo.Insert(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	// get details transaction by trx id
-	getTransactionDetails, err := ps.TransactionRepo.GetDetailsByTransactionID(ctx, transactionID)
-	if err != nil {
-		return nil, err
-	}
-
-	// insert payment
-	paymentID, err := ps.PaymentRepo.Insert(ctx, &model.CreatePaymentRequest{
-		TransactionID: transactionID,
-		FinalPrice:    req.TotalPrice,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// initiate invoice object request
-	invoiceReq := invoice.NewCreateInvoiceRequest(fmt.Sprintf("%d", paymentID), float64(req.TotalPrice))
-
-	// set customer data inside invoices
-	customerData := invoice.NewCustomerObject()
-	customerData.SetCustomerId(fmt.Sprintf("%d", patient.ID))
-	customerData.SetGivenNames(patient.Name)
-	invoiceReq.SetCustomer(*customerData)
-
-	// set description inside invoices
-	invoiceReq.SetDescription(fmt.Sprintf("Create Invoice Transaction E-RESEP with id %d", paymentID))
-
-	// set transaction items inside invoices
-	for _, trxDetail := range getTransactionDetails {
-		item := invoice.NewInvoiceItem(trxDetail.MedicationName, float32(trxDetail.Price), 1)
-		item.SetReferenceId(fmt.Sprintf("%d", trxDetail.ID))
-
-		invoiceReq.Items = append(invoiceReq.Items, *item)
-	}
-
-	// call xendit to create invoices
-	results, err := ps.XenditRequester.CreateInvoice(ctx, *invoiceReq)
-	if err != nil {
-		return nil, err
-	}
-
-	// update transaction status to process by id
-	err = ps.TransactionRepo.UpdateByID(ctx, model.Transaction{
-		Status: model.TransactionStatusEnumProcess,
-	}, transactionID)
-	if err != nil {
-		return nil, err
-	}
-
-	// update payment status to process and fill partner id by id
-	err = ps.PaymentRepo.UpdateByID(ctx, model.Payment{
-		Status:    model.PaymentStatusEnumProcess,
-		PartnerID: *results.Id,
-	}, paymentID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &model.CreatePaymentResponse{
-		ID:         *results.Id,
-		InvoiceURL: results.InvoiceUrl,
-	}, nil
 }
 
 func (ps *PaymentServiceImpl) HandleWebhookNotification(ctx context.Context, req invoice.InvoiceCallback) error {
